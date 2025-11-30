@@ -1,0 +1,70 @@
+# clustering_reduc_dim.py
+
+import pandas as pd
+import numpy as np
+
+from sklearn.datasets import load_iris
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans, DBSCAN
+from sklearn.metrics import (
+    silhouette_score,
+    davies_bouldin_score,
+    calinski_harabasz_score
+)
+
+import matplotlib.pyplot as plt
+
+def main():
+    # ————————————————————————
+    # 1. Cargar datos (ejemplo: Iris)
+    iris = load_iris()
+    X = iris.data      # 4 atributos numéricos
+    df = pd.DataFrame(X, columns = iris.feature_names)
+    
+    # Escalar datos
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+    
+    # ————————————————————————
+    # 2. Clustering con K-Means
+    k = 3  # por ejemplo
+    kmeans = KMeans(n_clusters=k, random_state=42)
+    labels_km = kmeans.fit_predict(X_scaled)
+    
+    # Métricas de clustering
+    sil_score = silhouette_score(X_scaled, labels_km)
+    db_score = davies_bouldin_score(X_scaled, labels_km)
+    ch_score = calinski_harabasz_score(X_scaled, labels_km)
+    
+    print("=== K-Means Clustering (k = {}) ===".format(k))
+    print("Silhouette Score      :", sil_score)
+    print("Davies–Bouldin Index  :", db_score)
+    print("Calinski–Harabasz Index:", ch_score)
+    
+    # ————————————————————————
+    # 3. Reducción de dimensionalidad con PCA
+    pca = PCA(n_components=2)  # reducir a 2 dimensiones
+    X_pca = pca.fit_transform(X_scaled)
+    
+    # Varianza explicada
+    var_exp = pca.explained_variance_ratio_
+    var_exp_acc = np.sum(var_exp)
+    print("\n=== PCA ===")
+    print("Varianza explicada por componente:", var_exp)
+    print("Varianza explicada acumulada (2 PCs):", var_exp_acc)
+    
+    # ————————————————————————
+    # 4. Visualización clusters en 2D (usando PCA)
+    plt.figure(figsize=(8,6))
+    scatter = plt.scatter(X_pca[:,0], X_pca[:,1], c=labels_km, cmap='viridis', s=50)
+    plt.title("Clusters (K-Means, k = {}) proyectados en 2D con PCA".format(k))
+    plt.xlabel("Componente principal 1")
+    plt.ylabel("Componente principal 2")
+    plt.legend(*scatter.legend_elements(), title="Cluster")
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+if __name__ == "__main__":
+    main()
